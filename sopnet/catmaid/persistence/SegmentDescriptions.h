@@ -19,6 +19,7 @@ public:
 	typedef segments_type::const_iterator                              const_iterator;
 
 	void add(const SegmentDescription& segment) { _segments.insert(segment); }
+	void add(iterator position, const SegmentDescription& segment) { _segments.insert(position, segment); }
 
 	unsigned int size() const { return _segments.size(); }
 

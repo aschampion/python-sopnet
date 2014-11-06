@@ -177,7 +177,7 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 			"JOIN djsopnet_segmentslice ss ON s.id = ss.segment_id "
 			"JOIN djsopnet_segmentfeatures sf ON s.id = sf.segment_id "
 			"WHERE sbr.block_id IN (" + blockIdsStr + ") "
-			"GROUP BY s.id, sf.id";
+			"GROUP BY s.id, sf.id ORDER BY s.id ASC";
 
 	LOG_DEBUG(postgresqlsegmentstorelog) << blockSegmentsQuery << std::endl;
 
@@ -189,6 +189,10 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 	PostgreSqlUtils::checkPostgreSqlError(queryResult, blockSegmentsQuery);
 	int nSegments = PQntuples(queryResult);
 
+	boost::chrono::nanoseconds queryOnlyElapsed(queryTimer.elapsed().wall);
+	LOG_DEBUG(postgresqlsegmentstorelog)
+			<< "Query took " << (queryOnlyElapsed.count() / 1e6) << " ms (wall)" << std::endl;
+
 	struct {
 		PGint8 id;
 		PGint4 section;
@@ -198,6 +202,9 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 		PGarray features;
 		PGarray slices;
 	} row;
+	util::rect<unsigned int> bbox;
+	util::point<double> ctr;
+	std::vector<double> segmentFeatures;
 
 	// Build SegmentDescription for each row
 	for (int i = 0; i < nSegments; ++i) {
@@ -209,27 +216,25 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 				FIELD_CTR_X, &row.min_x, FIELD_CTR_Y, &row.min_y,
 				FIELD_FEATURES, &row.features,
 				FIELD_SLICE_ARRAY, &row.slices));
+
 		SegmentHash segmentHash = PostgreSqlUtils::postgreSqlIdToHash(
 				static_cast<PostgreSqlHash>(row.id));
 		unsigned int section = static_cast<unsigned int>(row.section);
-		unsigned int minX = static_cast<unsigned int>(row.min_x);
-		unsigned int minY = static_cast<unsigned int>(row.min_y);
-		unsigned int maxX = static_cast<unsigned int>(row.max_x);
-		unsigned int maxY = static_cast<unsigned int>(row.max_y);
-		double ctrX = static_cast<double>(row.ctr_x);
-		double ctrY = static_cast<double>(row.ctr_y);
-		SegmentDescription segmentDescription(
-				section,
-				util::rect<unsigned int>(minX, minY, maxX, maxY),
-				util::point<double>(ctrX, ctrY));
+		bbox.minX = static_cast<unsigned int>(row.min_x);
+		bbox.minY = static_cast<unsigned int>(row.min_y);
+		bbox.maxX = static_cast<unsigned int>(row.max_x);
+		bbox.maxY = static_cast<unsigned int>(row.max_y);
+		ctr.x = static_cast<double>(row.ctr_x);
+		ctr.y = static_cast<double>(row.ctr_y);
+		SegmentDescription segmentDescription(section, bbox, ctr);
 
 		int nFeatures = PQntuples(row.features.res);
-		std::vector<double> segmentFeatures;
+		segmentFeatures.resize(nFeatures);
 		PGfloat8 feature;
 		for (int j = 0; j < nFeatures; ++j) {
 			PostgreSqlUtils::checkPQTypesError(
 					PQgetf(row.features.res, j, "%float8", 0, &feature));
-			segmentFeatures.push_back(static_cast<double>(feature));
+			segmentFeatures[j] = static_cast<double>(feature);
 		}
 
 		segmentDescription.setFeatures(segmentFeatures);
@@ -263,7 +268,7 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 			UTIL_THROW_EXCEPTION(PostgreSqlException, errorMsg.str());
 		}
 
-		segmentDescriptions->add(segmentDescription);
+		segmentDescriptions->add(segmentDescriptions->end(), segmentDescription);
 	}
 
 	PQclear(queryResult);
