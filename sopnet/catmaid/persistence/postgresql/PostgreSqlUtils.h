@@ -28,6 +28,8 @@ public:
 	 */
 	static void checkPostgreSqlError(const PGresult *result, const std::string query = "");
 
+	static void checkPQTypesError(int result);
+
 	/**
 	 * Convert from a Sopnet SegmentHash or SliceHash to the representation used
 	 * by PostgreSQL. In practice this is a conversion from an unsigned 64-bit

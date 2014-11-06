@@ -3,6 +3,7 @@
 
 #include "PostgreSqlUtils.h"
 #include <climits>
+#include <libpqtypes.h>
 #include <util/Logger.h>
 
 logger::LogChannel postgresqlutilslog("postgresqlutilslog", "[PostgreSqlUtils] ");
@@ -21,6 +22,18 @@ PostgreSqlUtils::checkPostgreSqlError(const PGresult *result, const std::string 
 			PostgreSqlException,
 			"A PostgreSQL query returned an unexpected result (" <<
 					PQresStatus(status) << ").");
+	}
+}
+
+void PostgreSqlUtils::checkPQTypesError(int result) {
+	if (!result) {
+		char* error = PQgeterror();
+		LOG_ERROR(postgresqlutilslog) << "Unexpected result: " <<
+				error << std::endl;
+		UTIL_THROW_EXCEPTION(
+			PostgreSqlException,
+			"A libpqtypes call returned an unexpected result (" <<
+					error << ").");
 	}
 }
 

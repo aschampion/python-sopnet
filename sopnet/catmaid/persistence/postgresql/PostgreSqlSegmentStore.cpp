@@ -3,6 +3,7 @@
 
 #include <boost/tokenizer.hpp>
 #include <boost/timer/timer.hpp>
+#include <libpqtypes.h>
 #include <util/Logger.h>
 #include "PostgreSqlSegmentStore.h"
 #include "PostgreSqlUtils.h"
@@ -18,6 +19,7 @@ PostgreSqlSegmentStore::PostgreSqlSegmentStore(
 			_config.getPostgreSqlDatabase(),
 			_config.getPostgreSqlUser(),
 			_config.getPostgreSqlPassword());
+	PQinitTypes(_pgConnection);
 }
 
 PostgreSqlSegmentStore::~PostgreSqlSegmentStore() {
@@ -155,11 +157,21 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 
 	if (!missingBlocks.empty()) return segmentDescriptions;
 
+	// Register composite segmentslice field row type for libpqtypes.
+	PGregisterType segmentsliceType = {"pgsqlsegmentstore_segslice", NULL, NULL};
+	PostgreSqlUtils::checkPQTypesError(
+		PQregisterTypes(_pgConnection, PQT_COMPOSITE, &segmentsliceType, 1, 0));
+
+	// Prepare the libpqtype specifier for result rows
+	PostgreSqlUtils::checkPQTypesError(PQspecPrepare(_pgConnection, "segmentrow_spec",
+			"%int8 %int4 %int4 %int4 %int4 %int4 "
+			"%float8 %float8 %float8[] %pgsqlsegmentstore_segslice[]", 0));
+
 	// Query segments for this set of blocks
 	std::string blockSegmentsQuery =
 			"SELECT s.id, s.section_inf, s.min_x, s.min_y, s.max_x, s.max_y, "
 			"s.ctr_x, s.ctr_y, sf.id, sf.features, " // sf.id is needed for GROUP
-			"array_agg(DISTINCT ROW(ss.slice_id, ss.direction)) "
+			"array_agg(DISTINCT (ss.slice_id, ss.direction)::pgsqlsegmentstore_segslice) "
 			"FROM djsopnet_segmentblockrelation sbr "
 			"JOIN djsopnet_segment s ON sbr.segment_id = s.id "
 			"JOIN djsopnet_segmentslice ss ON s.id = ss.segment_id "
@@ -167,75 +179,75 @@ PostgreSqlSegmentStore::getSegmentsByBlocks(
 			"WHERE sbr.block_id IN (" + blockIdsStr + ") "
 			"GROUP BY s.id, sf.id";
 
+	LOG_DEBUG(postgresqlsegmentstorelog) << blockSegmentsQuery << std::endl;
+
 	enum { FIELD_ID, FIELD_SECTION, FIELD_MIN_X, FIELD_MIN_Y,
 			FIELD_MAX_X, FIELD_MAX_Y, FIELD_CTR_X, FIELD_CTR_Y,
 			FIELD_SFID_UNUSED, FIELD_FEATURES, FIELD_SLICE_ARRAY };
-	PGresult* queryResult = PQexec(_pgConnection, blockSegmentsQuery.c_str());
+	PGresult* queryResult = PQparamExec(_pgConnection, NULL, blockSegmentsQuery.c_str(), 1);
 
 	PostgreSqlUtils::checkPostgreSqlError(queryResult, blockSegmentsQuery);
 	int nSegments = PQntuples(queryResult);
 
+	struct {
+		PGint8 id;
+		PGint4 section;
+		PGint4 min_x; PGint4 min_y;
+		PGint4 max_x; PGint4 max_y;
+		PGfloat8 ctr_x; PGfloat8 ctr_y;
+		PGarray features;
+		PGarray slices;
+	} row;
+
 	// Build SegmentDescription for each row
 	for (int i = 0; i < nSegments; ++i) {
-		char* cellStr;
-		cellStr = PQgetvalue(queryResult, i, FIELD_ID); // Segment ID
+		PostgreSqlUtils::checkPQTypesError(PQgetf(queryResult, i, "@segmentrow_spec",
+				FIELD_ID, &row.id,
+				FIELD_SECTION, &row.section,
+				FIELD_MIN_X, &row.min_x, FIELD_MIN_Y, &row.min_y,
+				FIELD_MAX_X, &row.min_x, FIELD_MAX_Y, &row.min_y,
+				FIELD_CTR_X, &row.min_x, FIELD_CTR_Y, &row.min_y,
+				FIELD_FEATURES, &row.features,
+				FIELD_SLICE_ARRAY, &row.slices));
 		SegmentHash segmentHash = PostgreSqlUtils::postgreSqlIdToHash(
-				boost::lexical_cast<PostgreSqlHash>(cellStr));
-		cellStr = PQgetvalue(queryResult, i, FIELD_SECTION); // Z-section infimum
-		unsigned int section = boost::lexical_cast<unsigned int>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_MIN_X);
-		unsigned int minX = boost::lexical_cast<unsigned int>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_MIN_Y);
-		unsigned int minY = boost::lexical_cast<unsigned int>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_MAX_X);
-		unsigned int maxX = boost::lexical_cast<unsigned int>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_MAX_Y);
-		unsigned int maxY = boost::lexical_cast<unsigned int>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_CTR_X);
-		double ctrX = boost::lexical_cast<double>(cellStr);
-		cellStr = PQgetvalue(queryResult, i, FIELD_CTR_Y);
-		double ctrY = boost::lexical_cast<double>(cellStr);
+				static_cast<PostgreSqlHash>(row.id));
+		unsigned int section = static_cast<unsigned int>(row.section);
+		unsigned int minX = static_cast<unsigned int>(row.min_x);
+		unsigned int minY = static_cast<unsigned int>(row.min_y);
+		unsigned int maxX = static_cast<unsigned int>(row.max_x);
+		unsigned int maxY = static_cast<unsigned int>(row.max_y);
+		double ctrX = static_cast<double>(row.ctr_x);
+		double ctrY = static_cast<double>(row.ctr_y);
 		SegmentDescription segmentDescription(
 				section,
 				util::rect<unsigned int>(minX, minY, maxX, maxY),
 				util::point<double>(ctrX, ctrY));
 
-		// Parse features of form: {featVal1, featVal2, ...}
-		cellStr = PQgetvalue(queryResult, i, FIELD_FEATURES);
-		std::string featuresString(cellStr);
-		featuresString = featuresString.substr(1, featuresString.length() - 2); // Remove { and }
-		boost::char_separator<char> separator("{}()\", \t");
-		boost::tokenizer<boost::char_separator<char> > features(featuresString, separator);
+		int nFeatures = PQntuples(row.features.res);
 		std::vector<double> segmentFeatures;
-		foreach (const std::string& feature, features) {
-			segmentFeatures.push_back(boost::lexical_cast<double>(feature));
+		PGfloat8 feature;
+		for (int j = 0; j < nFeatures; ++j) {
+			PostgreSqlUtils::checkPQTypesError(
+					PQgetf(row.features.res, j, "%float8", 0, &feature));
+			segmentFeatures.push_back(static_cast<double>(feature));
 		}
 
 		segmentDescription.setFeatures(segmentFeatures);
 
-		// Parse segment->slice tuples for segment of form: {"(slice_id, direction)",...}
-		cellStr = PQgetvalue(queryResult, i, FIELD_SLICE_ARRAY);
-		std::string tuplesString(cellStr);
-
-		tuplesString = tuplesString.substr(1, tuplesString.length() - 2); // Remove { and }
-		boost::tokenizer<boost::char_separator<char> > tuples(tuplesString, separator);
-
-		for (boost::tokenizer<boost::char_separator<char> >::iterator tuple = tuples.begin();
-				tuple != tuples.end();
-				++tuple) {
-
-			std::string sliceId = *tuple;
-			sliceId = sliceId.substr(sliceId.find_first_of("0123456789-"));
-
+		int nSlices = PQntuples(row.slices.res);
+		PGint8 sliceId;
+		PGbool direction;
+		for (int j = 0; j < nSlices; ++j) {
+			PostgreSqlUtils::checkPQTypesError(
+					PQgetf(row.slices.res, j, "%int8 %bool", 0, &sliceId, 1, &direction));
 			SliceHash sliceHash = PostgreSqlUtils::postgreSqlIdToHash(
-					boost::lexical_cast<PostgreSqlHash>(sliceId));
-
-			std::string direction = *(++tuple);
-			bool isLeft = direction.at(direction.find_first_of("tf")) == 't';
-
-			if (isLeft) segmentDescription.addLeftSlice(sliceHash);
+					static_cast<PostgreSqlHash>(sliceId));
+			if (direction) segmentDescription.addLeftSlice(sliceHash);
 			else segmentDescription.addRightSlice(sliceHash);
 		}
+
+		PQclear(row.features.res);
+		PQclear(row.slices.res);
 
 		// Check that the loaded segment has the correct hash.
 		if (segmentDescription.getHash() != segmentHash) {
