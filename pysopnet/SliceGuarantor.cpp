@@ -10,7 +10,7 @@ namespace python {
 
 struct MissingSliceData : virtual Exception {};
 
-void
+Locations
 SliceGuarantor::fill(
 		const util::point3<unsigned int>& request,
 		const SliceGuarantorParameters& parameters,
@@ -46,16 +46,18 @@ SliceGuarantor::fill(
 	LOG_DEBUG(pylog) << "[SliceGuarantor] asking for slices..." << std::endl;
 
 	// let it do what it was build for
-	Blocks missing = sliceGuarantor.guaranteeSlices(blocks);
+	Blocks missingBlocks = sliceGuarantor.guaranteeSlices(blocks);
 
-	LOG_DEBUG(pylog) << "[SliceGuarantor] " << missing.size() << " blocks missing" << std::endl;
+	LOG_DEBUG(pylog) << "[SliceGuarantor] " << missingBlocks.size() << " blocks missing" << std::endl;
 
-	if (missing.size() > 0)
-		UTIL_THROW_EXCEPTION(
-				MissingSliceData,
-				"not all images are available to extract slices in " << request);
+	// collect missing block locations
+	Locations missing;
+	foreach (const Block& block, missingBlocks)
+		missing.push_back(util::point3<unsigned int>(block.x(), block.y(), block.z()));
 
 	LOG_DEBUG(pylog) << "[SliceGuarantor] done" << std::endl;
+
+	return missing;
 }
 
 } // namespace python

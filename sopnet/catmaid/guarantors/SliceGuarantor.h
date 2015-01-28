@@ -61,6 +61,7 @@ private:
 			Slices&            slices,
 			ConflictSets&      conflictSets,
 			const Blocks&      requestedBlocks,
+			Blocks&            missingBlocks,
 			const unsigned int z);
 
 	// associate the extracted slices and conflict sets to the given blocks 

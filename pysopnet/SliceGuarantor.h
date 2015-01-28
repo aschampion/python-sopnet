@@ -4,6 +4,7 @@
 #include <catmaid/ProjectConfiguration.h>
 #include "SliceGuarantorParameters.h"
 #include "BackendClient.h"
+#include "Locations.h"
 
 namespace python {
 
@@ -22,8 +23,12 @@ public:
 	 *
 	 * @param configuration
 	 *             Project specific configuration.
+	 *
+	 * @return
+	 *             A list of block locations, for which stack images are needed
+	 *             to process the request. Empty on success.
 	 */
-	void fill(
+	Locations fill(
 			const util::point3<unsigned int>& blockLocation,
 			const SliceGuarantorParameters& parameters,
 			const ProjectConfiguration& configuration);

@@ -45,11 +45,22 @@ SliceGuarantor::guaranteeSlices(const Blocks& requestedBlocks) {
 
 	// non-request blocks that were needed to extract complete slices
 	Blocks       expansionBlocks;
+	Blocks       missingBlocks;
 
 	// get the slices and conflict sets for each section
-	for (unsigned int section = firstSection; section < firstSection + numSections; section++)
+	for (unsigned int section = firstSection; section < firstSection + numSections; section++) {
+
 		expansionBlocks.addAll(
-				extractSlicesAndConflicts(slices, conflictSets, requestedBlocks, section));
+				extractSlicesAndConflicts(
+						slices,
+						conflictSets,
+						requestedBlocks,
+						missingBlocks,
+						section));
+
+		if (!missingBlocks.empty())
+			return missingBlocks;
+	}
 
 	// store them
 	writeSlicesAndConflicts(
@@ -79,6 +90,7 @@ SliceGuarantor::extractSlicesAndConflicts(
 		Slices&            slices,
 		ConflictSets&      conflictSets,
 		const Blocks&      requestedBlocks,
+		Blocks&            missingBlocks,
 		const unsigned int z) {
 
 	LOG_ALL(sliceguarantorlog) << "extracting slices in section " << z << std::endl;
@@ -110,7 +122,13 @@ SliceGuarantor::extractSlicesAndConflicts(
 		util::box<unsigned int> sectionBox(bound.minX, bound.minY, z, bound.maxX, bound.maxY, z + 1);
 
 		// get the image for this box
-		boost::shared_ptr<Image> image = (*_stackStore->getImageStack(sectionBox))[0];
+		boost::shared_ptr<Image> image;
+		try {
+			image = (*_stackStore->getImageStack(sectionBox))[0];
+		} catch (IOError& e) {
+			missingBlocks = expansionBlocks;
+			return expansionBlocks;
+		}
 
 		LOG_ALL(sliceguarantorlog) << "Processing over " << bound << std::endl;
 
