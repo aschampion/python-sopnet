@@ -46,7 +46,7 @@ util::ProgramOption optionPGDatabase(
 		util::_default_value	  = "catsop");
 
 boost::shared_ptr<Slice>
-createSlice(unsigned int sourceSize, unsigned int pixelEntry) {
+createSlice(unsigned int pixelEntry) {
 
 	boost::shared_ptr<ConnectedComponent::pixel_list_type> pixelList =
 			boost::make_shared<ConnectedComponent::pixel_list_type>();
@@ -98,9 +98,9 @@ int main(int argc, char** argv)
 		PostgreSqlSliceStore sliceStore(pc, Membrane);
 
 		// Add first set of slices
-		boost::shared_ptr<Slice> slice1 = createSlice(10, 0);
-		boost::shared_ptr<Slice> slice2 = createSlice(10, 1);
-		boost::shared_ptr<Slice> slice3 = createSlice(10, 2);
+		boost::shared_ptr<Slice> slice1 = createSlice(0);
+		boost::shared_ptr<Slice> slice2 = createSlice(1);
+		boost::shared_ptr<Slice> slice3 = createSlice(2);
 
 		Slices slices = Slices();
 		slices.add(slice1);
