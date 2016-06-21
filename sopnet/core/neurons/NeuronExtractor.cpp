@@ -31,25 +31,25 @@ NeuronExtractor::prepareSliceMaps() {
 	_sliceNeighbors.clear();
 	_unvisitedSlices.clear();
 
-	foreach (boost::shared_ptr<Segment> segment, _segments->getSegments()) {
+	for (boost::shared_ptr<Segment> segment : _segments->getSegments()) {
 
 		std::vector<boost::shared_ptr<Slice> > sources = segment->getSourceSlices();
 		std::vector<boost::shared_ptr<Slice> > targets = segment->getTargetSlices();
 
-		foreach (boost::shared_ptr<Slice> slice, sources) {
+		for (boost::shared_ptr<Slice> slice : sources) {
 
 			_sliceSegments[slice->getId()].push_back(segment);
 			_unvisitedSlices.insert(slice->getId());
 		}
 
-		foreach (boost::shared_ptr<Slice> slice, targets) {
+		for (boost::shared_ptr<Slice> slice : targets) {
 
 			_sliceSegments[slice->getId()].push_back(segment);
 			_unvisitedSlices.insert(slice->getId());
 		}
 
-		foreach (boost::shared_ptr<Slice> source, sources)
-			foreach (boost::shared_ptr<Slice> target, targets) {
+		for (boost::shared_ptr<Slice> source : sources)
+			for (boost::shared_ptr<Slice> target : targets) {
 
 				_sliceNeighbors[source->getId()].push_back(target->getId());
 				_sliceNeighbors[target->getId()].push_back(source->getId());
@@ -85,7 +85,7 @@ NeuronExtractor::findConnectedSlices() {
 			_unvisitedSlices.erase(currentSlice);
 
 			// add all non-visted neighbors of it to the boundary stack
-			foreach (unsigned int neighbor, _sliceNeighbors[currentSlice])
+			for (unsigned int neighbor : _sliceNeighbors[currentSlice])
 				if (_unvisitedSlices.count(neighbor))
 					_boundarySlices.push(neighbor);
 		}
@@ -99,18 +99,13 @@ NeuronExtractor::createNeuronsFromSlices() {
 
 	_neurons->clear();
 
-	foreach (const std::set<unsigned int>& connectedSlices, _connectedSlices) {
+	for (const std::set<unsigned int>& connectedSlices : _connectedSlices) {
 
 		boost::shared_ptr<SegmentTree> segmentTree = boost::make_shared<SegmentTree>();
 
-		segmentTree->setResolution(
-				_segments->getResolutionX(),
-				_segments->getResolutionY(),
-				_segments->getResolutionZ());
+		for (unsigned int slice : connectedSlices) {
 
-		foreach (unsigned int slice, connectedSlices) {
-
-			foreach (boost::shared_ptr<Segment> segment, _sliceSegments[slice]) {
+			for (boost::shared_ptr<Segment> segment : _sliceSegments[slice]) {
 
 				if (boost::shared_ptr<EndSegment> end = boost::dynamic_pointer_cast<EndSegment>(segment))
 					segmentTree->add(end);

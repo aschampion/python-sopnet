@@ -4,7 +4,7 @@
 #include <pipeline/SimpleProcessNode.h>
 #include <pipeline/Value.h>
 #include <imageprocessing/ImageStack.h>
-#include <sopnet/segments/Segments.h>
+#include <sopnet/core/segments/Segments.h>
 
 // forward declarations
 class EndSegment;
@@ -42,17 +42,17 @@ private:
 
 	int segmentSize(const Segment& segment);
 
-	pipeline::Input<ImageStack> _groundTruth;
+	pipeline::Input<ImageStack<LabelImage> > _groundTruth;
 
 	pipeline::Output<costs_function_type> _costFunction;
 
 	std::map<float, unsigned int> _gtLabels;
 
-	// per pixel reward (i.e., this number is supposed to be negative) for each 
+	// per pixel reward (i.e., this number is supposed to be negative) for each
 	// correctly merged pixel
 	double _correctlyMergedPairReward;
 
-	// number of incorrectly merged pixels after which a segment is considered a 
+	// number of incorrectly merged pixels after which a segment is considered a
 	// false merge
 	unsigned int _incorrectlyMergedThreshold;
 

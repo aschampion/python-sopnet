@@ -1,11 +1,11 @@
 #include <pipeline/Process.h>
 #include <util/Logger.h>
-#include <sopnet/exceptions.h>
-#include <sopnet/evaluation/GroundTruthExtractor.h>
-#include <sopnet/neurons/NeuronExtractor.h>
-#include <sopnet/segments/EndSegment.h>
-#include <sopnet/segments/ContinuationSegment.h>
-#include <sopnet/segments/BranchSegment.h>
+#include <exceptions.h>
+#include <sopnet/core/evaluation/GroundTruthExtractor.h>
+#include <sopnet/core/neurons/NeuronExtractor.h>
+#include <sopnet/core/segments/EndSegment.h>
+#include <sopnet/core/segments/ContinuationSegment.h>
+#include <sopnet/core/segments/BranchSegment.h>
 #include "OverlapCostFunction.h"
 
 static logger::LogChannel linearcostfunctionlog("linearcostfunctionlog", "[OverlapCostFunction] ");
@@ -31,7 +31,7 @@ OverlapCostFunction::costs(
 
 	unsigned int i = 0;
 
-	foreach (boost::shared_ptr<EndSegment> end, ends) {
+	for (boost::shared_ptr<EndSegment> end : ends) {
 
 		double c = costs(*end);
 
@@ -39,7 +39,7 @@ OverlapCostFunction::costs(
 		i++;
 	}
 
-	foreach (boost::shared_ptr<ContinuationSegment> continuation, continuations) {
+	for (boost::shared_ptr<ContinuationSegment> continuation : continuations) {
 
 		double c = costs(*continuation);
 
@@ -47,7 +47,7 @@ OverlapCostFunction::costs(
 		i++;
 	}
 
-	foreach (boost::shared_ptr<BranchSegment> branch, branches) {
+	for (boost::shared_ptr<BranchSegment> branch : branches) {
 
 		double c = costs(*branch);
 
@@ -67,7 +67,7 @@ OverlapCostFunction::costs(const Segment& segment) {
 
 	double minCosts = getDefaultCosts(segment);
 
-	foreach (boost::shared_ptr<SegmentTree> gtSegmentTree, *gtSegmentTrees) {
+	for (boost::shared_ptr<SegmentTree> gtSegmentTree : *gtSegmentTrees) {
 
 		double costs = getMatchingCosts(segment, *gtSegmentTree);
 		if (costs < minCosts)
@@ -85,13 +85,13 @@ OverlapCostFunction::getOverlappingGroundTruthSegments(const Segment& segment) {
 
 	pipeline::Value<Segments> overlappingGtSegments;
 
-	foreach (boost::shared_ptr<EndSegment> gtSegment, _groundTruth->getEnds(interSectionInterval))
+	for (boost::shared_ptr<EndSegment> gtSegment : _groundTruth->getEnds(interSectionInterval))
 		if (overlaps(segment, *gtSegment))
 			overlappingGtSegments->add(gtSegment);
-	foreach (boost::shared_ptr<ContinuationSegment> gtSegment, _groundTruth->getContinuations(interSectionInterval))
+	for (boost::shared_ptr<ContinuationSegment> gtSegment : _groundTruth->getContinuations(interSectionInterval))
 		if (overlaps(segment, *gtSegment))
 			overlappingGtSegments->add(gtSegment);
-	foreach (boost::shared_ptr<BranchSegment> gtSegment, _groundTruth->getBranches(interSectionInterval))
+	for (boost::shared_ptr<BranchSegment> gtSegment : _groundTruth->getBranches(interSectionInterval))
 		if (overlaps(segment, *gtSegment))
 			overlappingGtSegments->add(gtSegment);
 
@@ -118,13 +118,13 @@ OverlapCostFunction::getMatchingCosts(const Segment& segment, const Segments& se
 	std::vector<boost::shared_ptr<Slice> > bLeftSlices;
 	std::vector<boost::shared_ptr<Slice> > bRightSlices;
 
-	foreach (boost::shared_ptr<Segment> gtSegment, segments.getSegments())
+	for (boost::shared_ptr<Segment> gtSegment : segments.getSegments())
 		addLeftRightSlices(*gtSegment, bLeftSlices, bRightSlices);
 
 	int leftOverlap  = overlap(aLeftSlices,  bLeftSlices);
 	int rightOverlap = overlap(aRightSlices, bRightSlices);
 
-	// if ground truth is skeleton, number of different pixels don't mean 
+	// if ground truth is skeleton, number of different pixels don't mean
 	// anything -- in this case, return the number of connected skeleton nodes
 	if (_gtFromSkeletons)
 		return -(std::min(leftOverlap, rightOverlap));
@@ -150,13 +150,13 @@ OverlapCostFunction::overlaps(const Segment& a, const Segment& b) {
 
 	addLeftRightSlices(b, bLeftSlices, bRightSlices);
 
-	foreach (boost::shared_ptr<Slice> aSlice, aLeftSlices)
-		foreach (boost::shared_ptr<Slice> bSlice, bLeftSlices)
+	for (boost::shared_ptr<Slice> aSlice : aLeftSlices)
+		for (boost::shared_ptr<Slice> bSlice : bLeftSlices)
 			if (_overlap.exceeds(*aSlice, *bSlice, 0))
 				return true;
 
-	foreach (boost::shared_ptr<Slice> aSlice, aRightSlices)
-		foreach (boost::shared_ptr<Slice> bSlice, bRightSlices)
+	for (boost::shared_ptr<Slice> aSlice : aRightSlices)
+		for (boost::shared_ptr<Slice> bSlice : bRightSlices)
 			if (_overlap.exceeds(*aSlice, *bSlice, 0))
 				return true;
 
@@ -171,16 +171,16 @@ OverlapCostFunction::addLeftRightSlices(
 
 	if (segment.getDirection() == Right) {
 
-		foreach (boost::shared_ptr<Slice> slice, segment.getSourceSlices())
+		for (boost::shared_ptr<Slice> slice : segment.getSourceSlices())
 			leftSlices.push_back(slice);
-		foreach (boost::shared_ptr<Slice> slice, segment.getTargetSlices())
+		for (boost::shared_ptr<Slice> slice : segment.getTargetSlices())
 			rightSlices.push_back(slice);
 
 	} else {
 
-		foreach (boost::shared_ptr<Slice> slice, segment.getSourceSlices())
+		for (boost::shared_ptr<Slice> slice : segment.getSourceSlices())
 			rightSlices.push_back(slice);
-		foreach (boost::shared_ptr<Slice> slice, segment.getTargetSlices())
+		for (boost::shared_ptr<Slice> slice : segment.getTargetSlices())
 			leftSlices.push_back(slice);
 	}
 }
@@ -190,7 +190,7 @@ OverlapCostFunction::sumSizes(const std::vector<boost::shared_ptr<Slice> >& slic
 
 	unsigned int sum = 0;
 
-	foreach (boost::shared_ptr<Slice> slice, slices)
+	for (boost::shared_ptr<Slice> slice : slices)
 		sum += slice->getComponent()->getSize();
 
 	return sum;
@@ -203,8 +203,8 @@ OverlapCostFunction::overlap(
 
 	unsigned int overlap = 0;
 
-	foreach (boost::shared_ptr<Slice> aSlice, aSlices)
-		foreach (boost::shared_ptr<Slice> bSlice, bSlices)
+	for (boost::shared_ptr<Slice> aSlice : aSlices)
+		for (boost::shared_ptr<Slice> bSlice : bSlices)
 			overlap += _overlap(*aSlice, *bSlice);
 
 	return overlap;

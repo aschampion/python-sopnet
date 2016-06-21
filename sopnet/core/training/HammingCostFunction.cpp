@@ -1,9 +1,9 @@
 #include <pipeline/Process.h>
 #include <util/Logger.h>
-#include <sopnet/exceptions.h>
-#include <sopnet/segments/EndSegment.h>
-#include <sopnet/segments/ContinuationSegment.h>
-#include <sopnet/segments/BranchSegment.h>
+#include <exceptions.h>
+#include <sopnet/core/segments/EndSegment.h>
+#include <sopnet/core/segments/ContinuationSegment.h>
+#include <sopnet/core/segments/BranchSegment.h>
 #include "HammingCostFunction.h"
 
 static logger::LogChannel linearcostfunctionlog("linearcostfunctionlog", "[HammingCostFunction] ");
@@ -27,7 +27,7 @@ HammingCostFunction::costs(
 
 	unsigned int i = 0;
 
-	foreach (boost::shared_ptr<EndSegment> end, ends) {
+	for (boost::shared_ptr<EndSegment> end : ends) {
 
 		double c = costs(end);
 
@@ -35,7 +35,7 @@ HammingCostFunction::costs(
 		i++;
 	}
 
-	foreach (boost::shared_ptr<ContinuationSegment> continuation, continuations) {
+	for (boost::shared_ptr<ContinuationSegment> continuation : continuations) {
 
 		double c = costs(continuation);
 
@@ -43,7 +43,7 @@ HammingCostFunction::costs(
 		i++;
 	}
 
-	foreach (boost::shared_ptr<BranchSegment> branch, branches) {
+	for (boost::shared_ptr<BranchSegment> branch : branches) {
 
 		double c = costs(branch);
 
@@ -63,12 +63,12 @@ HammingCostFunction::costs(
 //	// match the hamming distance is ignored here as it won't change the minimum of the objective.
 //
 //	_goldStandard->contains(segment) ? return -1.0 : return 1.0;
-//     
+//
 //	// or:
 //
 //	//if (_goldStandard->contains(segment)) {
 //	//	return -1.0;
-//	//} 
+//	//}
 //	//else {
 //	//	return 1.0;
 //	//}
@@ -80,7 +80,7 @@ HammingCostFunction::costs(boost::shared_ptr<EndSegment> end) {
 
 	if (_goldStandard->contains(end)) {
 		return -1.0;
-	} 
+	}
 	else {
 		return 1.0;
 	}
@@ -92,7 +92,7 @@ HammingCostFunction::costs(boost::shared_ptr<ContinuationSegment> continuation) 
 
 	if (_goldStandard->contains(continuation)) {
 		return -1.0;
-	} 
+	}
 	else {
 		return 1.0;
 	}
@@ -104,7 +104,7 @@ HammingCostFunction::costs(boost::shared_ptr<BranchSegment> branch) {
 
 	if (_goldStandard->contains(branch)) {
 		return -1.0;
-	} 
+	}
 	else {
 		return 1.0;
 	}

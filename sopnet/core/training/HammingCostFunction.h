@@ -2,7 +2,7 @@
 #define SOPNET_TRAINING_HAMMING_COST_FUNCTION_H__
 
 #include <pipeline/SimpleProcessNode.h>
-#include <sopnet/segments/Segments.h>
+#include <sopnet/core/segments/Segments.h>
 
 // forward declarations
 class EndSegment;
@@ -37,9 +37,9 @@ private:
 	double costs(boost::shared_ptr<EndSegment> end);
 	double costs(boost::shared_ptr<ContinuationSegment> continuation);
 	double costs(boost::shared_ptr<BranchSegment> branch);
-	
+
 	pipeline::Input<Segments> _goldStandard;
-	
+
 	pipeline::Output<costs_function_type> _costFunction;
 
 };

@@ -3,8 +3,8 @@
 
 #include <pipeline/SimpleProcessNode.h>
 #include <pipeline/Value.h>
-#include <sopnet/features/Overlap.h>
-#include <sopnet/segments/Segments.h>
+#include <sopnet/core/features/Overlap.h>
+#include <sopnet/core/segments/Segments.h>
 
 // forward declarations
 class EndSegment;
@@ -44,13 +44,13 @@ private:
 	pipeline::Value<Segments> getOverlappingGroundTruthSegments(const Segment& segment);
 
 	/**
-	 * Get the cost for a segment, as if it would not overlap with any ground 
+	 * Get the cost for a segment, as if it would not overlap with any ground
 	 * truth segment.
 	 */
 	double getDefaultCosts(const Segment& segment);
 
 	/**
-	 * Get the cost for a segment if it would match the given set of connected 
+	 * Get the cost for a segment if it would match the given set of connected
 	 * segments.
 	 */
 	double getMatchingCosts(const Segment& segment, const Segments& segments);

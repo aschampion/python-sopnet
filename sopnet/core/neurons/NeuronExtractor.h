@@ -2,11 +2,11 @@
 #define SOPNET_NEURONS_NEURON_EXTRACTOR_H__
 
 #include <pipeline/all.h>
-#include <sopnet/segments/Segments.h>
-#include <sopnet/segments/SegmentTrees.h>
+#include <sopnet/core/segments/Segments.h>
+#include <sopnet/core/segments/SegmentTrees.h>
 
 /**
- * Given a set of segments, extracts all connected components of slices as 
+ * Given a set of segments, extracts all connected components of slices as
  * neurons.
  */
 class NeuronExtractor : public pipeline::SimpleProcessNode<> {

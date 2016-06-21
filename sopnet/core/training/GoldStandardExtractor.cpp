@@ -1,9 +1,9 @@
 #include <limits>
 
 #include <util/ProgramOptions.h>
-#include <sopnet/inference/ProblemAssembler.h>
-#include <sopnet/inference/ObjectiveGenerator.h>
-#include <inference/LinearSolver.h>
+#include <sopnet/core/inference/ProblemAssembler.h>
+#include <sopnet/core/inference/ObjectiveGenerator.h>
+#include <solvers/LinearSolver.h>
 #include "GoldStandardExtractor.h"
 #include "OverlapCostFunction.h"
 #include "MergeCostFunction.h"
