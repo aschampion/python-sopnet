@@ -9,8 +9,8 @@
 #include <slices/SliceHash.h>
 
 /**
- * A lightweight representation of a segment, as represented in the database 
- * backends. Instead of storing slices, only the hashes of the slices are 
+ * A lightweight representation of a segment, as represented in the database
+ * backends. Instead of storing slices, only the hashes of the slices are
  * stored.
  */
 class SegmentDescription {
@@ -65,6 +65,14 @@ public:
 	const std::vector<SliceHash>& getRightSlices() const { return _rightSliceHashes; }
 
 	SegmentType getType() const;
+
+	/**
+	 * Get the core SOPNET direction of this segment, only relevant for ends
+	 * and branches.
+	 */
+	Direction getDirection() const;
+
+	boost::shared_ptr<Segment> asSegment(const std::map<SliceHash, boost::shared_ptr<Slice> >& sliceHashMap) const;
 
 private:
 

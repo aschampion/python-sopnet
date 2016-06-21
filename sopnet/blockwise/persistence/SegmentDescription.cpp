@@ -1,5 +1,6 @@
 #include "SegmentDescription.h"
 #include <imageprocessing/ConnectedComponent.h>
+#include <sopnet/core/segments/Segments.h>
 
 
 SegmentDescription::SegmentDescription(const Segment& segment) :
@@ -55,4 +56,75 @@ SegmentDescription::getType() const {
 	if (leftSize == 0 || rightSize == 0) return EndSegmentType;
 	else if (leftSize == 1 && rightSize == 1) return ContinuationSegmentType;
 	else return BranchSegmentType;
+}
+
+Direction
+SegmentDescription::getDirection() const {
+
+	std::size_t leftSize = _leftSliceHashes.size();
+	std::size_t rightSize = _rightSliceHashes.size();
+
+	switch (getType()) {
+
+		case EndSegmentType:
+			return (leftSize > rightSize) ? Right : Left;
+			break;
+		case BranchSegmentType:
+			return (leftSize > rightSize) ? Left : Right;
+			break;
+		default:
+			return Left;
+			break;
+	}
+}
+
+boost::shared_ptr<Segment>
+SegmentDescription::asSegment(const std::map<SliceHash, boost::shared_ptr<Slice> >& sliceHashMap) const {
+
+	boost::shared_ptr<Segment> segment;
+
+	switch (getType()) {
+
+		case EndSegmentType: {
+			SliceHash sliceHash = getDirection() == Left ?
+					getRightSlices()[0] :
+					getLeftSlices()[0];
+			segment = boost::make_shared<EndSegment>(
+					Segment::getNextSegmentId(),
+					getDirection(),
+					sliceHashMap.at(sliceHash));
+			break;
+		}
+
+		case ContinuationSegmentType:
+			segment = boost::make_shared<ContinuationSegment>(
+					Segment::getNextSegmentId(),
+					getDirection(),
+					sliceHashMap.at(getRightSlices()[0]),
+					sliceHashMap.at(getLeftSlices()[0]));
+			break;
+
+		case BranchSegmentType:
+			if (getDirection() == Left) {
+				segment = boost::make_shared<BranchSegment>(
+						Segment::getNextSegmentId(),
+						Left,
+						sliceHashMap.at(getRightSlices()[0]),
+						sliceHashMap.at(getLeftSlices()[0]),
+						sliceHashMap.at(getLeftSlices()[1]));
+			} else {
+				segment = boost::make_shared<BranchSegment>(
+						Segment::getNextSegmentId(),
+						Right,
+						sliceHashMap.at(getLeftSlices()[0]),
+						sliceHashMap.at(getRightSlices()[0]),
+						sliceHashMap.at(getRightSlices()[1]));
+			}
+			break;
+
+		default:
+			break; // Should not occur.
+	}
+
+	return segment;
 }
