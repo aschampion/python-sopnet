@@ -7,26 +7,22 @@
 SegmentHash
 hash_value(const Segment& segment) {
 
-	// continuations and branches should have hashes independent of their 
+	std::vector<SliceHash> sliceHashes;
+
+	for (boost::shared_ptr<Slice> slice : segment.getSlices())
+		sliceHashes.push_back(slice->hashValue());
+
+	SegmentHash hash = hash_value(sliceHashes);
+
+	// continuations and branches should have hashes independent of their
 	// direction
-	if (segment.getSlices().size() > 1) {
-
-		std::vector<SliceHash> sliceHashes;
-
-		for (boost::shared_ptr<Slice> slice : segment.getSlices())
-			sliceHashes.push_back(slice->hashValue());
-
-		return hash_value(sliceHashes);
-
 	// end segments should depend on the direction
-	} else {
+	if (segment.getSlices().size() == 1) {
 
-		SegmentHash hash = segment.getSlices()[0]->hashValue();
 		boost::hash_combine(hash, segment.getDirection());
-
-		return hash;
 	}
 
+	return hash;
 }
 
 SegmentHash
