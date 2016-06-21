@@ -26,7 +26,7 @@ class GroundTruthGuarantor :
 public:
 
 	/**
-	 * Create a new GroundTruthGuarantor using the given database stores.
+	 * Create a new GroundTruthGuarantor using the given stores.
 	 *
 	 * @param projectConfiguration
 	 *              The ProjectConfiguration used to configure Block and Core
@@ -39,6 +39,9 @@ public:
 	 * @param sliceStore
 	 *              The slice store to store slices extracted from ground
 	 *              truth labels.
+	 *
+	 * @param stackStore
+	 *        	    The stack store to retrieve the ground truth labels.
 	 */
 	GroundTruthGuarantor(
 			const ProjectConfiguration&     projectConfiguration,
@@ -65,7 +68,7 @@ private:
 
 	boost::shared_ptr<SegmentStore> _segmentStore;
 	boost::shared_ptr<SliceStore>   _sliceStore;
-	
+
 	boost::shared_ptr<ComponentTreeExtractorParameters<LabelImage::value_type> > _parameters;
 	boost::shared_ptr<StackStore<LabelImage> >      _stackStore;
 

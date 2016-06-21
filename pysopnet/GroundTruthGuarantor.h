@@ -20,7 +20,7 @@ public:
 	 *             The location of the requested core.
 	 *
 	 * @param parameters
-	 *             Solution extraction parameters.
+	 *             Ground truth extraction parameters.
 	 *
 	 * @param configuration
 	 *             Project specific configuration.
@@ -30,7 +30,7 @@ public:
 	 *             needed to process the request. Empty on success.
 	 */
 	Locations fill(
-			const util::point<unsigned int, 3>& blockLocation,
+			const util::point<unsigned int, 3>& coreLocation,
 			const GroundTruthGuarantorParameters& parameters,
 			const ProjectConfiguration& configuration);
 };
