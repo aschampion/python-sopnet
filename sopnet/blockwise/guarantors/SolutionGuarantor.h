@@ -25,16 +25,16 @@ public:
 	 *              parameters.
 	 *
 	 * @param segmentStore
-	 *              The SegmentStore to use to retrieve segments and store the  
+	 *              The SegmentStore to use to retrieve segments and store the
 	 *              solution.
 	 *
 	 * @param sliceStore
 	 *              The slice store to retrieve conflict sets on slices.
 	 *
 	 * @param corePadding
-	 *              The number of blocks to pad around a core in order to 
-	 *              eliminate border effects. The solution will be computed on 
-	 *              the padded core, but only the solution of the core will be 
+	 *              The number of blocks to pad around a core in order to
+	 *              eliminate border effects. The solution will be computed on
+	 *              the padded core, but only the solution of the core will be
 	 *              stored.
 	 *
 	 * @param forceExplanation
@@ -71,15 +71,15 @@ protected:
 			const std::vector<SegmentHash>& solution,
 			const SegmentDescriptions& segments);
 
-private:
-
-	// get all blocks of the padded core
-	Blocks getPaddedCoreBlocks(const Core& core);
-
 	std::vector<SegmentHash> computeSolution(
 			const SegmentDescriptions& segments,
 			const ConflictSets&        conflictSets,
 			const SegmentConstraints&  explicitConstraints);
+
+private:
+
+	// get all blocks of the padded core
+	Blocks getPaddedCoreBlocks(const Core& core);
 
 	boost::shared_ptr<LinearConstraints> createConstraints(
 			const SegmentDescriptions& segments,
@@ -123,7 +123,7 @@ private:
 	std::map<SegmentHash, unsigned int> _hashToVariable;
 	std::map<unsigned int, SegmentHash> _variableToHash;
 
-	// mappings from slice hashes to hashes of segments that use the slice 
+	// mappings from slice hashes to hashes of segments that use the slice
 	// either on the left or right side
 	std::map<SliceHash, std::vector<SegmentHash> > _leftSliceToSegments;
 	std::map<SliceHash, std::vector<SegmentHash> > _rightSliceToSegments;

@@ -13,6 +13,7 @@
 #include "SegmentGuarantor.h"
 #include "SolutionGuarantor.h"
 #include "GroundTruthGuarantor.h"
+#include "GoldStandardGuarantor.h"
 #include "Locations.h"
 #include "logging.h"
 
@@ -44,7 +45,7 @@ void translateGRBException(const GRBException& e) {
 #endif
 
 /**
- * Defines all the python classes in the module libpysopnet. Here we decide 
+ * Defines all the python classes in the module libpysopnet. Here we decide
  * which functions and data members we wish to expose.
  */
 BOOST_PYTHON_MODULE(libpysopnet) {
@@ -97,8 +98,11 @@ BOOST_PYTHON_MODULE(libpysopnet) {
 			.def("setReadCosts", &SolutionGuarantorParameters::setReadCosts)
 			.def("setStoreCosts", &SolutionGuarantorParameters::setStoreCosts);
 
-	// SegmentGuarantorParameters
+	// GroundTruthGuarantorParameters
 	boost::python::class_<GroundTruthGuarantorParameters>("GroundTruthGuarantorParameters");
+
+	// GoldStandardGuarantorParameters
+	boost::python::class_<GoldStandardGuarantorParameters>("GoldStandardGuarantorParameters");
 
 	// ProjectConfiguration
 	boost::python::class_<ProjectConfiguration>("ProjectConfiguration")
@@ -175,9 +179,13 @@ BOOST_PYTHON_MODULE(libpysopnet) {
 	boost::python::class_<SolutionGuarantor>("SolutionGuarantor")
 			.def("fill", &SolutionGuarantor::fill);
 
-	// SolutionGuarantor
+	// GroundTruthGuarantor
 	boost::python::class_<GroundTruthGuarantor>("GroundTruthGuarantor")
 			.def("fill", &GroundTruthGuarantor::fill);
+
+	// GoldStandardGuarantor
+	boost::python::class_<GoldStandardGuarantor>("GoldStandardGuarantor")
+			.def("fill", &GoldStandardGuarantor::fill);
 }
 
 } // namespace python

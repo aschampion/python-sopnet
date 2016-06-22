@@ -7,6 +7,7 @@
 #include <imageprocessing/ImageStack.h>
 #include <sopnet/core/segments/Segments.h>
 #include <sopnet/core/inference/Reconstructor.h>
+#include <sopnet/core/inference/ObjectiveGenerator.h>
 #include <solvers/LinearConstraints.h>
 
 class GoldStandardExtractor : public pipeline::SimpleProcessNode<> {
